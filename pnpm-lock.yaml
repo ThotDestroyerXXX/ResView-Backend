@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  pdf-parse@1.1.1:
+    hash: fmlklyfpgegni6zgr2lceseyf4
+    path: patches/pdf-parse@1.1.1.patch
+
 dependencies:
   cors:
     specifier: ^2.8.5
@@ -22,7 +27,7 @@ dependencies:
     version: 8.0.0
   pdf-parse:
     specifier: ^1.1.1
-    version: 1.1.1
+    version: 1.1.1(patch_hash=fmlklyfpgegni6zgr2lceseyf4)
   replicate:
     specifier: ^1.1.0
     version: 1.1.0
@@ -860,7 +865,7 @@ packages:
     engines: {node: '>=16'}
     dev: false
 
-  /pdf-parse@1.1.1:
+  /pdf-parse@1.1.1(patch_hash=fmlklyfpgegni6zgr2lceseyf4):
     resolution: {integrity: sha512-v6ZJ/efsBpGrGGknjtq9J/oC8tZWq0KWL5vQrk2GlzLEQPUDB1ex+13Rmidl1neNN358Jn9EHZw5y07FFtaC7A==}
     engines: {node: '>=6.8.1'}
     dependencies:
@@ -869,6 +874,7 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: false
+    patched: true
 
   /picomatch@2.3.1:
     resolution: {integrity: sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==}
