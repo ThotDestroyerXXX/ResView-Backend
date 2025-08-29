@@ -159,6 +159,10 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
   }
 });
 
+app.get("/", (req, res) => {
+  res.send("Welcome to the Resume Analysis API");
+});
+
 app.listen(process.env.PORT || 8000, () => {
   console.log(
     `Backend running on http://localhost:${process.env.PORT || 8000}`
