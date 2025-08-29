@@ -5,8 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "devStart": "nodemon index.js",
-    "postinstall": "patch-package"
+    "devStart": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
