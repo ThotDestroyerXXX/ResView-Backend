@@ -2,7 +2,6 @@ import express from "express";
 import pdfParse from "pdf-parse";
 import Replicate from "replicate";
 import cors from "cors";
-import fs from "fs";
 import dotenv from "dotenv";
 import multer from "multer";
 
@@ -15,7 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 // Configure multer for file uploads
-const upload = multer({ dest: "uploads/" });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -28,8 +28,7 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const filePath = req.file.path;
-    const dataBuffer = fs.readFileSync(filePath);
+    const dataBuffer = req.file.buffer;
     const pdfData = await pdfParse(dataBuffer);
 
     const resumeText = pdfData.text;
@@ -97,64 +96,48 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
     ${resumeText}
     `;
 
-    const output = await replicate.run("ibm-granite/granite-3.3-8b-instruct", {
-      input: { prompt },
-    });
-
-    // Join output and try to extract valid JSON
-    const outputStr = output.join("");
-    console.log("Raw model output:", outputStr);
-
-    // Find JSON content - look for content between first { and last }
-    let jsonStr;
     try {
-      const firstBrace = outputStr.indexOf("{");
-      const lastBrace = outputStr.lastIndexOf("}");
-
-      if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
-        throw new Error("Could not find valid JSON structure");
-      }
-
-      jsonStr = outputStr.substring(firstBrace, lastBrace + 1);
-      const result = JSON.parse(jsonStr);
-
-      // Cleanup uploaded file
-      try {
-        fs.unlinkSync(filePath);
-      } catch (error) {
-        console.error("Error deleting temporary file:", error);
-      }
-
-      res.json(result);
-    } catch (parseErr) {
-      console.error("Error parsing JSON:", parseErr);
-      console.error("Attempted to parse:", jsonStr);
-
-      // Try to clean up the file if it exists
-      if (req.file && req.file.path) {
-        try {
-          fs.unlinkSync(req.file.path);
-        } catch (error) {
-          console.error("Error deleting temporary file:", error);
+      const output = await replicate.run(
+        "ibm-granite/granite-3.3-8b-instruct",
+        {
+          input: { prompt },
         }
-      }
+      );
 
-      res
-        .status(500)
-        .json({ error: "Failed to parse AI response. Please try again." });
+      // Join output and try to extract valid JSON
+      const outputStr = output.join("");
+      console.log("Raw model output:", outputStr);
+
+      // Find JSON content - look for content between first { and last }
+      let jsonStr;
+      try {
+        const firstBrace = outputStr.indexOf("{");
+        const lastBrace = outputStr.lastIndexOf("}");
+
+        if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
+          throw new Error("Could not find valid JSON structure");
+        }
+
+        jsonStr = outputStr.substring(firstBrace, lastBrace + 1);
+        const result = JSON.parse(jsonStr);
+
+        res.json(result);
+      } catch (parseErr) {
+        console.error("Error parsing JSON:", parseErr);
+        console.error("Attempted to parse:", jsonStr);
+
+        res
+          .status(500)
+          .json({ error: "Failed to parse AI response. Please try again." });
+      }
+    } catch (replicateErr) {
+      console.error("Error with Replicate API:", replicateErr);
+      res.status(500).json({
+        error: "Error connecting to AI service. Please try again later.",
+      });
     }
   } catch (err) {
     console.error("Error analyzing resume:", err);
-
-    // Try to clean up the file if it exists
-    if (req.file && req.file.path) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (error) {
-        console.error("Error deleting temporary file:", error);
-      }
-    }
-
     res.status(500).json({ error: `Error analyzing resume: ${err.message}` });
   }
 });
